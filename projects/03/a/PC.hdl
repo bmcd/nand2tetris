@@ -17,4 +17,10 @@ CHIP PC {
 
     PARTS:
     // Put your code here:
+    Mux16(a=outReg, b=in, sel=load, out=muxOut);
+    Not(in=inc, out=notInc);
+    Or8Way(in[0]=notInc, in[1]=reset, in[2]=load, in[3..7]=false, out=dontInc);
+    ALU(x=muxOut, y[1..15]=false, y[0]=true, zx=reset, nx=false, zy=dontInc, ny=false, f=true, no=false, out=aluOut);
+    Or8Way(in[0]=inc, in[1]=reset, in[2]=load, in[3..7]=false, out=changed);
+    Register(in=aluOut, load=changed, out=out, out=outReg);
 }
