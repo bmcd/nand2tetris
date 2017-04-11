@@ -40,4 +40,33 @@ CHIP CPU {
 
     PARTS:
     // Put your code here:
+
+    Mux16(a=outA, b=inM, sel=instruction[12], out=aOrM);
+    ALU(x=outD, y=aOrM, zx=instruction[11], nx=instruction[10], zy=instruction[9], ny=instruction[8], f=instruction[7], no=instruction[6], out=aluOut, out=outM, zr=zr, ng=ng);
+
+    // jmp stuff
+    DMux8Way(in=instruction[15], sel=instruction[0..2], a=nullJmp, b=jgt, c=jeq, d=jge, e=jlt, f=jne, g=jle, h=jmp);
+    Not(in=zr, out=notZ);
+    Not(in=ng, out=notN);
+    And(a=notZ, b=notN, out=notZNotN);
+    Or(a=zr, b=ng, out=zOrN);
+    And(a=jgt, b=notZNotN, out=jgtVal);
+    And(a=jeq, b=zr, out=jeqVal);
+    And(a=jge, b=notN, out=jgeVal);
+    And(a=jlt, b=ng, out=jltVal);
+    And(a=jne, b=notZ, out=jneVal);
+    And(a=jle, b=zOrN, out=jleVal);
+    Or8Way(in[0]=false, in[1]=jgtVal, in[2]=jeqVal, in[3]=jgeVal, in[4]=jltVal, in[5]=jneVal, in[6]=jleVal, in[7]=jmp, out=jump);
+
+    And(a=instruction[4], b=instruction[15], out=loadM);
+    DRegister(in=aluOut, load=loadM, out=outD); // done
+    Not(in=instruction[15], out=aIns); // done
+    Mux16(a=aluOut, b=instruction, sel=aIns, out=aInsValOrOutVal); // done
+    Or(a=aIns, b=instruction[5], out=aInsOrSetA); // done
+    ARegister(in=aInsValOrOutVal, load=aInsOrSetA, out[0..15]=outA, out[0..14]=addressM); // done
+    Not(in=jump, out=notJump); // done
+    Not(in=reset, out=notReset); // done
+    Or(a=notJump, b=notReset, out=notJumpOrReset); // done
+    PC(in=outA, load=jump, inc=notJumpOrReset, reset=reset, out[0..14]=pc);
+    And(a=instruction[3], b=instruction[15], out=writeM); // done
 }
