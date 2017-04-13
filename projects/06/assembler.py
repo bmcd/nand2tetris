@@ -4,22 +4,37 @@ import sys
 class Assembler:
     def __init__(self, filename):
         self.filename = filename
-        self.parser = Parser(filename)
-        self.code = Code()
         self.symbols = SymbolTable()
+        self.parser = Parser(filename, self.symbols)
+        self.code = Code()
         self.output = ""
+        self.count = 0
 
     def assemble(self):
         while (self.parser.hasMoreCommands()):
             self.parser.advance()
+            if (self.parser.commandType() == "A_COMMAND" or
+                    self.parser.commandType() == "C_COMMAND"):
+                self.count += 1
+            elif (self.parser.commandType() == "L_COMMAND"):
+                self.symbols.addEntry(self.parser.rawSymbol(), self.count)
+
+        print(self.symbols.symbols)
+
+        self.parser.reset()
+
+        while (self.parser.hasMoreCommands()):
+            self.parser.advance()
             if (self.parser.commandType() == "A_COMMAND"):
+                self.count += 1
                 self.output += "0"
-                binary = "{0:015b}".format(int(self.parser.symbol()))
+                binary = "{0:015b}".format(self.parser.symbol())
                 self.output += binary
                 self.output += "\n"
             elif (self.parser.commandType() == "L_COMMAND"):
                 pass
             else:
+                self.count += 1
                 self.output += "111"
                 comp = self.parser.comp()
                 dest = self.parser.dest()
@@ -33,9 +48,13 @@ class Assembler:
 
 
 class Parser:
-    def __init__(self, filename):
+    def __init__(self, filename, symbols):
         file = open(filename, "r")
         self.lines = file.readlines()
+        self.symbols = symbols
+        self.reset()
+
+    def reset(self):
         self.current_index = -1
 
     def hasMoreCommands(self):
@@ -74,8 +93,17 @@ class Parser:
     def commandType(self):
         return self.command
 
-    def symbol(self):
+    def rawSymbol(self):
         return self.sym
+
+    def symbol(self):
+        if (self.sym.isdigit()):
+            return int(self.sym)
+
+        if (not self.symbols.contains(self.sym)):
+            self.symbols.addEntry(self.sym, self.symbols.getNextAddress())
+
+        return self.symbols.getAddress(self.sym)
 
     def dest(self):
         return self.destination
@@ -103,7 +131,7 @@ class Code:
 
     def comp(self, input):
         a = "1" if "M" in input else "0"
-        c = input.replace("M", "A")
+        c = input.replace("M", "A").strip()
         if (c == "0"):
             return a + "101010"
         if (c == "1"):
@@ -140,29 +168,41 @@ class Code:
             return a + "000000"
         if (c == "D|A"):
             return a + "010101"
+        print("error: " + c)
 
     def jump(self, input):
         if (input is None):
             return "000"
-        elif (input == "JGT"):
+        input = input.strip()
+        if (input == "JGT"):
             return "001"
-        elif (input == "JEQ"):
+        if (input == "JEQ"):
             return "010"
-        elif (input == "JGE"):
+        if (input == "JGE"):
             return "011"
-        elif (input == "JLT"):
+        if (input == "JLT"):
             return "100"
-        elif (input == "JNE"):
+        if (input == "JNE"):
             return "101"
-        elif (input == "JLE"):
+        if (input == "JLE"):
             return "110"
-        elif (input == "JMP"):
+        if (input == "JMP"):
             return "111"
 
 
 class SymbolTable:
     def __init__(self):
         self.symbols = dict()
+        self.nextAddress = 16
+        for x in range(0, 16):
+            self.addEntry("R" + str(x), x)
+        self.addEntry("SP", 0)
+        self.addEntry("LCL", 1)
+        self.addEntry("ARG", 2)
+        self.addEntry("THIS", 3)
+        self.addEntry("THAT", 4)
+        self.addEntry("SCREEN", 16384)
+        self.addEntry("KBD", 24576)
 
     def addEntry(self, symbol, address):
         self.symbols[symbol] = address
@@ -172,6 +212,11 @@ class SymbolTable:
 
     def getAddress(self, symbol):
         return self.symbols[symbol]
+
+    def getNextAddress(self):
+        last = self.nextAddress
+        self.nextAddress += 1
+        return last
 
 
 if (__name__ == "__main__"):
