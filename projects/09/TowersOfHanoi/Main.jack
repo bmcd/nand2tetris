@@ -1,0 +1,11 @@
+class Main {
+	function void main() {
+		var Game game;
+		let game = Game.new();
+		while (game.isRunning()) {
+			do game.play();
+		}
+		do Output.printString("Game Over!");
+		return;
+	}
+}

@@ -1,0 +1,251 @@
+function Tower.new 0
+push constant 2
+call Memory.alloc 1
+pop pointer 0
+push constant 7
+call Array.new 1
+pop this 0
+push argument 0
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push constant 0
+push this 0
+add
+push constant 7
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+push constant 1
+push this 0
+add
+push constant 6
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+push constant 2
+push this 0
+add
+push constant 5
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+push constant 3
+push this 0
+add
+push constant 4
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+push constant 4
+push this 0
+add
+push constant 3
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+push constant 5
+push this 0
+add
+push constant 2
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+push constant 6
+push this 0
+add
+push constant 1
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+push constant 7
+pop this 1
+goto IF_END0
+label IF_FALSE0
+push constant 0
+pop this 1
+label IF_END0
+push pointer 0
+return
+function Tower.print 3
+push argument 0
+pop pointer 0
+push constant 0
+pop local 0
+push constant 1
+call String.new 1
+push constant 91
+call String.appendChar 2
+pop local 2
+push local 2
+call Output.printString 1
+pop temp 0
+label WHILE_EXP0
+push local 0
+push this 1
+lt
+not
+if-goto WHILE_END0
+push local 0
+push this 0
+add
+pop pointer 1
+push that 0
+pop local 1
+push local 2
+push local 1
+call String.setInt 2
+pop temp 0
+push local 2
+call Output.printString 1
+pop temp 0
+push local 0
+push constant 1
+add
+pop local 0
+goto WHILE_EXP0
+label WHILE_END0
+call Output.println 0
+pop temp 0
+push constant 0
+return
+function Tower.printError 0
+push argument 0
+pop pointer 0
+push constant 23
+call String.new 1
+push constant 73
+call String.appendChar 2
+push constant 110
+call String.appendChar 2
+push constant 118
+call String.appendChar 2
+push constant 97
+call String.appendChar 2
+push constant 108
+call String.appendChar 2
+push constant 105
+call String.appendChar 2
+push constant 100
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 109
+call String.appendChar 2
+push constant 111
+call String.appendChar 2
+push constant 118
+call String.appendChar 2
+push constant 101
+call String.appendChar 2
+push constant 44
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 116
+call String.appendChar 2
+push constant 114
+call String.appendChar 2
+push constant 121
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 97
+call String.appendChar 2
+push constant 103
+call String.appendChar 2
+push constant 97
+call String.appendChar 2
+push constant 105
+call String.appendChar 2
+push constant 110
+call String.appendChar 2
+call Output.printString 1
+pop temp 0
+call Output.println 0
+pop temp 0
+push constant 0
+return
+function Tower.moveToTower 2
+push argument 0
+pop pointer 0
+push pointer 0
+call Tower.getCurrentTop 1
+pop local 0
+push argument 1
+call Tower.getCurrentTop 1
+pop local 1
+push local 0
+push local 1
+lt
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push pointer 0
+call Tower.pop 1
+pop temp 0
+push argument 1
+push local 0
+call Tower.add 2
+pop temp 0
+label IF_FALSE0
+push constant 0
+return
+function Tower.pop 0
+push argument 0
+pop pointer 0
+push this 1
+push constant 1
+sub
+pop this 1
+push constant 0
+return
+function Tower.add 0
+push argument 0
+pop pointer 0
+push this 1
+push this 0
+add
+push argument 1
+pop temp 0
+pop pointer 1
+push temp 0
+pop that 0
+push this 1
+push constant 1
+add
+pop this 1
+push constant 0
+return
+function Tower.getTop 0
+push argument 0
+pop pointer 0
+push this 1
+return
+function Tower.getCurrentTop 0
+push argument 0
+pop pointer 0
+push this 1
+push constant 0
+eq
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push constant 8
+return
+label IF_FALSE0
+push this 1
+push constant 1
+sub
+push this 0
+add
+pop pointer 1
+push that 0
+return

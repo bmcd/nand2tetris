@@ -1,0 +1,39 @@
+function Main.main 1
+call Game.new 0
+pop local 0
+label WHILE_EXP0
+push local 0
+call Game.isRunning 1
+not
+if-goto WHILE_END0
+push local 0
+call Game.play 1
+pop temp 0
+goto WHILE_EXP0
+label WHILE_END0
+push constant 10
+call String.new 1
+push constant 71
+call String.appendChar 2
+push constant 97
+call String.appendChar 2
+push constant 109
+call String.appendChar 2
+push constant 101
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 79
+call String.appendChar 2
+push constant 118
+call String.appendChar 2
+push constant 101
+call String.appendChar 2
+push constant 114
+call String.appendChar 2
+push constant 33
+call String.appendChar 2
+call Output.printString 1
+pop temp 0
+push constant 0
+return
