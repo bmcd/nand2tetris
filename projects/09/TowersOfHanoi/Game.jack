@@ -1,0 +1,75 @@
+class Game {
+	field Array towers;
+	
+	constructor Game new() {
+		let towers = Array.new(3);
+		let towers[0] = Tower.new(true);
+		let towers[1] = Tower.new(false);
+		let towers[2] = Tower.new(false);
+		return this;
+	}
+
+	method boolean isRunning() {
+		var Tower towerTwo;
+		var Tower towerThree;
+		let towerTwo  = towers[1];
+		let towerThree = towers[2];
+		if (towerTwo.getTop() = 7) {
+			return false;
+		}
+		if (towerThree.getTop() = 7) {
+			return false;
+		}
+		return true;
+	}
+	
+	method void play() {
+		var int from;
+		var int to;
+		do printGameState();
+		let from = Keyboard.readInt("From(1, 2, 3)?");
+		let from = from - 1;
+		let to = Keyboard.readInt("To(1, 2, 3)?");
+		let to = to - 1;
+		do moveIfValid(from, to);
+		return;
+	}
+
+	method void printGameState() {
+		var int i;
+		var Tower tower;
+		do Screen.clearScreen();
+		do Output.moveCursor(0, 0);
+		let i = 0;
+		while (i < 3) {
+			let tower = towers[i];
+			do tower.print();
+			let i = i + 1;
+		}
+		return;
+	}
+
+	method void moveIfValid(int from, int to) {
+		var Tower fromTower;
+		var Tower toTower;
+		if (from < 0) {
+			return;
+		}
+		if (to < 0) {
+			return;
+		}
+		if (from > 2) {
+			return;
+		}
+		if (to > 2) {
+			return;
+		}
+		if (from = to) {
+			return;
+		}
+		let fromTower = towers[from];
+		let toTower = towers[to];
+		do fromTower.moveToTower(toTower);
+		return;
+	}
+}

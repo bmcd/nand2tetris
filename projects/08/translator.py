@@ -7,29 +7,46 @@ class CodeWriter:
         self.output = open(filename, "w")
         self.label_count = 0
         self.writeInit()
+        self.function_name_stack = ["null"]
 
     def setFileName(self, filename):
         self.current_file = filename
 
+    def getCurrentFilePrefix(self):
+        return self.current_file.split(".")[0]
+
     def writeInit(self):
         print("Writing init TODO")
+        lines = list()
+        lines.append("@256")
+        lines.append("D=A")
+        lines.append("@SP")
+        lines.append("M=D")
+        self.writeToOutput(lines)
+        self.writeCall("Sys.init", "0")
 
-    def writeLabel(self, label):
+    def writeLabel(self, label, shouldPrefix=False):
         print("Writing label: " + label)
         lines = list()
+        if(shouldPrefix):
+            label = "{}${}".format(self.function_name_stack[-1], label)
         lines.append("(" + label + ")")
         self.writeToOutput(lines)
 
-    def writeGoto(self, label):
+    def writeGoto(self, label, shouldPrefix=False):
         print("Writing goto: " + label)
         lines = list()
+        if(shouldPrefix):
+            label = "{}${}".format(self.function_name_stack[-1], label)
         lines.append("@" + label)
         lines.append("0;JMP")
         self.writeToOutput(lines)
 
-    def writeIf(self, label):
+    def writeIf(self, label, shouldPrefix=False):
         print("Writing if: " + label)
         lines = list()
+        if(shouldPrefix):
+            label = "{}${}".format(self.function_name_stack[-1], label)
         self.oneArg(lines)
         lines.append("D=M")
         lines.append("@" + label)
@@ -38,15 +55,100 @@ class CodeWriter:
 
     def writeCall(self, functionName, numArgs):
         print("Writing call: " + functionName + " " + numArgs)
-        pass
+        lines = list()
+        return_label = self.uniqueLabel("RETURN")
+        lines.append("@{}".format(return_label))
+        lines.append("D=A")
+        lines.append("@SP")
+        lines.append("A=M")
+        lines.append("M=D")
+        self.advanceStack(lines)
+        self.pushFrom(lines, "LCL", 0, True)
+        self.advanceStack(lines)
+        self.pushFrom(lines, "ARG", 0, True)
+        self.advanceStack(lines)
+        self.pushFrom(lines, "THIS", 0, True)
+        self.advanceStack(lines)
+        self.pushFrom(lines, "THAT", 0, True)
+        self.advanceStack(lines)
+        lines.append("@SP")
+        lines.append("D=M")
+        lines.append("@{}".format(numArgs))
+        lines.append("D=D-A")
+        lines.append("@{}".format(5))
+        lines.append("D=D-A")
+        lines.append("@ARG")
+        lines.append("M=D")
+        lines.append("@SP")
+        lines.append("D=M")
+        lines.append("@LCL")
+        lines.append("M=D")
+        self.writeToOutput(lines)
+        self.writeGoto(functionName)
+        self.writeLabel(return_label)
 
     def writeReturn(self):
         print("Writing return")
-        pass
+        lines = list()
+        lines.append("@LCL")
+        lines.append("D=M")
+        lines.append("@FRAME")
+        lines.append("M=D")
+        lines.append("@5")
+        lines.append("A=D-A")
+        lines.append("D=M")
+        lines.append("@RET")
+        lines.append("M=D")
+        self.popTo(lines, "ARG", 0)
+        lines.append("@ARG")
+        lines.append("D=M+1")
+        lines.append("@SP")
+        lines.append("M=D")
+
+        lines.append("@FRAME")
+        lines.append("D=M")
+        lines.append("@1")
+        lines.append("A=D-A")
+        lines.append("D=M")
+        lines.append("@THAT")
+        lines.append("M=D")
+
+        lines.append("@FRAME")
+        lines.append("D=M")
+        lines.append("@2")
+        lines.append("A=D-A")
+        lines.append("D=M")
+        lines.append("@THIS")
+        lines.append("M=D")
+
+        lines.append("@FRAME")
+        lines.append("D=M")
+        lines.append("@3")
+        lines.append("A=D-A")
+        lines.append("D=M")
+        lines.append("@ARG")
+        lines.append("M=D")
+
+        lines.append("@FRAME")
+        lines.append("D=M")
+        lines.append("@4")
+        lines.append("A=D-A")
+        lines.append("D=M")
+        lines.append("@LCL")
+        lines.append("M=D")
+
+        lines.append("@RET")
+        lines.append("A=M")
+        lines.append("0;JMP")
+
+        self.writeToOutput(lines)
 
     def writeFunction(self, functionName, numLocals):
         print("Writing function: " + functionName + " " + numLocals)
-        pass
+        self.writeLabel(functionName)
+        self.function_name_stack.append(functionName)
+        for i in range(int(numLocals)):
+            self.writePushPop("C_PUSH", "constant", "0")
 
     def writeArithmetic(self, command):
         print("Writing arthmetic: " + command)
@@ -92,17 +194,21 @@ class CodeWriter:
 
     def writeToOutput(self, lines):
         out = "\n".join(lines) + "\n"
-        #print(out)
+        # print(out)
         self.output.write(out)
 
     def advanceStack(self, lines):
         lines.append("@SP")
         lines.append("M=M+1")
 
-    def writeComp(self, lines, jump):
-        truelabel = "TRUELABEL" + str(self.label_count)
-        finishlabel = "FINISHLABEL" + str(self.label_count)
+    def uniqueLabel(self, label):
+        suffix = self.label_count
         self.label_count += 1
+        return label + str(suffix)
+
+    def writeComp(self, lines, jump):
+        truelabel = self.uniqueLabel("TRUELABEL")
+        finishlabel = self.uniqueLabel("FINISHLABEL")
         lines.append("@SP")
         lines.append("A=M")
         lines.append("D=M-D")
@@ -164,7 +270,7 @@ class CodeWriter:
                 self.pushFrom(lines, "5", index, True)
                 self.advanceStack(lines)
             elif (segment == "static"):
-                self.pushFrom(lines, "16", index, True)
+                self.pushFrom(lines, "static", index, True)
                 self.advanceStack(lines)
 
         elif (command == "C_POP"):
@@ -181,13 +287,17 @@ class CodeWriter:
             elif (segment == "temp"):
                 self.popTo(lines, "5", index, True)
             elif (segment == "static"):
-                self.popTo(lines, "16", index, True)
+                self.popTo(lines, "static", index, True)
 
         self.writeToOutput(lines)
 
-    def pushFrom(self, lines, pointer, index, isstatic=False):
+    def pushFrom(self, lines, pointer, index, isAddress=False):
+        if(pointer == "static"):
+            pointer = "{}.{}".format(self.getCurrentFilePrefix(), index)
+            index = 0
+
         lines.append("@{}".format(pointer))
-        if(isstatic):
+        if(isAddress):
             lines.append("D=A")
         else:
             lines.append("D=M")
@@ -198,9 +308,13 @@ class CodeWriter:
         lines.append("A=M")
         lines.append("M=D")
 
-    def popTo(self, lines, pointer, index, isstatic=False):
+    def popTo(self, lines, pointer, index, isAddress=False):
+        if(pointer == "static"):
+            pointer = "{}.{}".format(self.getCurrentFilePrefix(), index)
+            index = 0
+
         lines.append("@{}".format(pointer))
-        if(isstatic):
+        if(isAddress):
             lines.append("D=A")
         else:
             lines.append("D=M")
@@ -311,10 +425,16 @@ if (__name__ == "__main__"):
             elif (cmd == "C_ARITHMETIC"):
                 codewriter.writeArithmetic(parser.arg1)
             elif (cmd == "C_LABEL"):
-                codewriter.writeLabel(parser.arg1)
+                codewriter.writeLabel(parser.arg1, True)
             elif (cmd == "C_GOTO"):
-                codewriter.writeGoto(parser.arg1)
+                codewriter.writeGoto(parser.arg1, True)
             elif (cmd == "C_IF"):
-                codewriter.writeIf(parser.arg1)
+                codewriter.writeIf(parser.arg1, True)
+            elif (cmd == "C_CALL"):
+                codewriter.writeCall(parser.arg1, parser.arg2)
+            elif (cmd == "C_FUNCTION"):
+                codewriter.writeFunction(parser.arg1, parser.arg2)
+            elif (cmd == "C_RETURN"):
+                codewriter.writeReturn()
         parser.close()
     codewriter.close()

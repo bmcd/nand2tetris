@@ -1,0 +1,78 @@
+class Tower {
+	field Array array;
+	field int top;
+	
+	constructor Tower new(boolean fill) {
+		let array = Array.new(7);
+		if (fill) {
+			let array[0] = 7;
+			let array[1] = 6;
+			let array[2] = 5;
+			let array[3] = 4;
+			let array[4] = 3;
+			let array[5] = 2;
+			let array[6] = 1;
+			let top = 7;
+		} else {
+			let top = 0;
+		}
+		return this;
+	}
+	
+	method void print() {
+		var int current;
+		var int value;
+		var String intString;
+		let current = 0;
+		let intString = "[";
+		do Output.printString(intString);
+		while (current < top) {
+			let value = array[current];
+			do intString.setInt(value);
+			do Output.printString(intString);
+			let current = current + 1;
+		}
+		do Output.println();
+		return;
+	}
+
+	method void printError() {
+		do Output.printString("Invalid move, try again");
+		do Output.println();
+		return;
+	}
+
+	method void moveToTower(Tower toTower) {
+		var int currentFromTop;
+		var int currentToTop;
+		let currentFromTop = getCurrentTop();
+		let currentToTop = toTower.getCurrentTop();
+		if (currentFromTop < currentToTop) {
+			do pop();
+			do toTower.add(currentFromTop);
+		}
+		return;
+	}
+
+	method void pop() {
+		let top = top - 1;
+		return;
+	}
+
+	method void add(int value) {
+		let array[top] = value;
+		let top = top + 1;
+		return;
+	}
+
+	method int getTop() {
+		return top;
+	}
+
+	method int getCurrentTop() {
+		if (top = 0) {
+			return 8;
+		}
+		return array[top - 1];
+	}
+}
