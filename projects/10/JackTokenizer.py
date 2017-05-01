@@ -6,9 +6,16 @@ IDENTIFIER = '^(\w+)'
 SYMBOL = '^(\W)'
 INTEGER = '^(\d+)'
 STRING = '^"(.*)"'
-KEYWORDS = [ 'class', 'constructor', 'function', 'method', 'field', 'static', 'var', 'int', 'char', 'boolean', 'void', 'true', 'false', 'null', 'this', 'let', 'do', 'if', 'else', 'while', 'return' ]
-class JackTokenizer:
+KEYWORDS = [
+    'class', 'constructor', 'function', 'method', 'field', 'static', 'var',
+    'int', 'char', 'boolean', 'void', 'true', 'false', 'null', 'this', 'let',
+    'do', 'if', 'else', 'while', 'return'
+]
+OPS = ['+', '-', '*', '/', '|', '&', '~', '<', '>', '=']
+UNARY_OPS = ['-', '~']
 
+
+class JackTokenizer:
     def __init__(self, file):
         self.file = file.open("r")
         name = file.name.split(".")[0]
@@ -32,14 +39,14 @@ class JackTokenizer:
     def hasMoreTokens(self):
         # TODO remove comments
         self.input = self.input.lstrip()
-        if(len(self.input) == 0):
+        if (len(self.input) == 0):
             return False
-        if(self.input.startswith("/*")):
+        if (self.input.startswith("/*")):
             end_comment = self.input.find("*/") + 2
             self.input = self.input[end_comment:]
             return self.hasMoreTokens()
-        if(self.input.startswith("//")):
-            end_comment = self.input.find("\n") + 1 # newline is 1?
+        if (self.input.startswith("//")):
+            end_comment = self.input.find("\n") + 1  # newline is 1?
             self.input = self.input[end_comment:]
             return self.hasMoreTokens()
 
@@ -54,30 +61,31 @@ class JackTokenizer:
         self.intVal = None
         self.stringVal = None
         intmatch = re.match(INTEGER, i)
-        if(intmatch):
+        if (intmatch):
             self.tokenType = "INT_CONST"
             match, capture, self.input = self.getParts(intmatch)
             self.intVal = int(capture)
             self.tokens.append(('integerConstant', capture))
             return
         stringmatch = re.match(STRING, i)
-        if(stringmatch):
+        if (stringmatch):
             self.tokenType = "STRING_CONST"
             match, capture, self.input = self.getParts(stringmatch)
             self.stringVal = capture
             self.tokens.append(('stringConstant', capture))
             return
         symbolmatch = re.match(SYMBOL, i)
-        if(symbolmatch):
+        if (symbolmatch):
             self.tokenType = "SYMBOL"
             match, capture, self.input = self.getParts(symbolmatch)
-            self.symbol = capture.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-            self.tokens.append(('symbol', self.symbol))
+            self.symbol = capture
+            self.tokens.append(('symbol', self.symbol.replace("&", "&amp;")
+                                .replace("<", "&lt;").replace(">", "&gt;")))
             return
         identifiermatch = re.match(IDENTIFIER, i)
-        if(identifiermatch):
+        if (identifiermatch):
             match, capture, self.input = self.getParts(identifiermatch)
-            if(capture in KEYWORDS):
+            if (capture in KEYWORDS):
                 self.tokenType = "KEYWORD"
                 self.keyWord = capture.upper()
                 self.tokens.append(('keyword', capture))
@@ -89,6 +97,7 @@ class JackTokenizer:
     def getParts(self, match):
         whole = match.group(0)
         return whole, match.group(1), match.string[len(whole):]
+
 
 class CompileEngine:
     def __init__(self, tokenizer, filename):
@@ -109,86 +118,89 @@ class CompileEngine:
         self.lines.append("<{}> {} </{}>".format(tag, value, tag))
 
     def advance(self):
-        if(self.tokenizer.hasMoreTokens()):
+        if (self.tokenizer.hasMoreTokens()):
             self.tokenizer.advance()
 
     def compileClass(self):
         self.advance()
         self.writeOpen("class")
-        self.compileItem() # class
-        self.compileItem() # name
-        self.compileItem() # {
+        self.compileItem()  # class
+        self.compileItem()  # name
+        self.compileItem()  # {
 
         while (self.tokenizer.keyWord in ["STATIC", "FIELD"]):
             self.compileClassVarDec()
 
-        while (self.tokenizer.keyWord in ["CONSTRUCTOR", "FUNCTION", "METHOD"]):
+        while (self.tokenizer.keyWord in ["CONSTRUCTOR", "FUNCTION", "METHOD"]
+               ):
             self.compileSubroutine()
 
-        self.compileItem() # }
+        self.compileItem()  # }
         self.writeClose("class")
 
     def compileClassVarDec(self):
         self.writeOpen("classVarDec")
-        self.compileItem() # static/field
-        self.compileItem() # type
-        self.compileItem() # name
-        self.compileItem() # ;
+        self.compileItem()  # static/field
+        self.compileItem()  # type
+        while (self.tokenizer.symbol != ";"):
+            self.compileItem()  # name
+            if (self.tokenizer.symbol == ","):
+                self.compileItem()  # ,
+        self.compileItem()  # ;
         self.writeClose("classVarDec")
 
     def compileSubroutine(self):
         self.writeOpen("subroutineDec")
-        self.compileItem() # constructor/function/method
-        self.compileItem() # return type
-        self.compileItem() # name
-        self.compileItem() # (
+        self.compileItem()  # constructor/function/method
+        self.compileItem()  # return type
+        self.compileItem()  # name
+        self.compileItem()  # (
         self.compileParameterList()
-        self.compileItem() # )
+        self.compileItem()  # )
         self.writeOpen("subroutineBody")
-        self.compileItem() # {
-        while(self.tokenizer.keyWord == "VAR"):
+        self.compileItem()  # {
+        while (self.tokenizer.keyWord == "VAR"):
             self.compileVarDec()
 
         self.compileStatements()
 
-        self.compileItem() # }
+        self.compileItem()  # }
         self.writeClose("subroutineBody")
         self.writeClose("subroutineDec")
 
     def compileParameterList(self):
         self.writeOpen("parameterList")
-        while(self.tokenizer.symbol != ")"):
-            self.compileItem() # type
-            self.compileItem() # name
-            if(self.tokenizer.symbol == ","):
-                self.compileItem() # ,
+        while (self.tokenizer.symbol != ")"):
+            self.compileItem()  # type
+            self.compileItem()  # name
+            if (self.tokenizer.symbol == ","):
+                self.compileItem()  # ,
 
         self.writeClose("parameterList")
-        
 
     def compileVarDec(self):
         self.writeOpen("varDec")
-        self.compileItem() # var
-        self.compileItem() # type
-        while(self.tokenizer.symbol != ";"):
-            self.compileItem() # name
-            if(self.tokenizer.symbol == ","):
-                self.compileItem() # ,
-        self.compileItem() # ;
+        self.compileItem()  # var
+        self.compileItem()  # type
+        while (self.tokenizer.symbol != ";"):
+            self.compileItem()  # name
+            if (self.tokenizer.symbol == ","):
+                self.compileItem()  # ,
+        self.compileItem()  # ;
         self.writeClose("varDec")
 
     def compileStatements(self):
         self.writeOpen("statements")
-        while(self.tokenizer.symbol != "}"):
-            if(self.tokenizer.keyWord == "DO"):
+        while (self.tokenizer.symbol != "}"):
+            if (self.tokenizer.keyWord == "DO"):
                 self.compileDo()
-            elif(self.tokenizer.keyWord == "IF"):
+            elif (self.tokenizer.keyWord == "IF"):
                 self.compileIf()
-            elif(self.tokenizer.keyWord == "LET"):
+            elif (self.tokenizer.keyWord == "LET"):
                 self.compileLet()
-            elif(self.tokenizer.keyWord == "RETURN"):
+            elif (self.tokenizer.keyWord == "RETURN"):
                 self.compileReturn()
-            elif(self.tokenizer.keyWord == "WHILE"):
+            elif (self.tokenizer.keyWord == "WHILE"):
                 self.compileWhile()
             else:
                 raise Exception()
@@ -196,93 +208,121 @@ class CompileEngine:
 
     def compileDo(self):
         self.writeOpen("doStatement")
-        self.compileItem() # do
-        while(self.tokenizer.symbol != "("):
-            self.compileItem() # Main . method
-        self.compileItem() # (
+        self.compileItem()  # do
+        while (self.tokenizer.symbol != "("):
+            self.compileItem()  # Main . method
+        self.compileItem()  # (
         self.compileExpressionList()
-        self.compileItem() # )
-        self.compileItem() # ;
+        self.compileItem()  # )
+        self.compileItem()  # ;
         self.writeClose("doStatement")
 
     def compileLet(self):
         self.writeOpen("letStatement")
-        self.compileItem() # let
-        while(self.tokenizer.symbol != "="):
-            self.compileItem() # a 
-            if(self.tokenizer.symbol == "["):
-                self.compileItem() # [ 
-                self.compileExpression() # 0
-                self.compileItem() # ] 
-        self.compileItem() # =
+        self.compileItem()  # let
+        while (self.tokenizer.symbol != "="):
+            self.compileItem()  # a
+            if (self.tokenizer.symbol == "["):
+                self.compileItem()  # [
+                self.compileExpression()  # 0
+                self.compileItem()  # ]
+        self.compileItem()  # =
         self.compileExpression()
-        self.compileItem() # ;
+        self.compileItem()  # ;
         self.writeClose("letStatement")
 
     def compileWhile(self):
         self.writeOpen("whileStatement")
-        self.compileItem() # while
-        self.compileItem() # (
+        self.compileItem()  # while
+        self.compileItem()  # (
         self.compileExpression()
-        self.compileItem() # )
-        self.compileItem() # {
+        self.compileItem()  # )
+        self.compileItem()  # {
         self.compileStatements()
-        self.compileItem() # }
+        self.compileItem()  # }
         self.writeClose("whileStatement")
 
     def compileReturn(self):
         self.writeOpen("returnStatement")
-        self.compileItem() # return
-        if(self.tokenizer.symbol != ";"):
+        self.compileItem()  # return
+        if (self.tokenizer.symbol != ";"):
             self.compileExpression()
-        self.compileItem() # ;
+        self.compileItem()  # ;
         self.writeClose("returnStatement")
 
     def compileIf(self):
         self.writeOpen("ifStatement")
-        self.compileItem() # if
-        self.compileItem() # (
+        self.compileItem()  # if
+        self.compileItem()  # (
         self.compileExpression()
-        self.compileItem() # )
-        self.compileItem() # {
+        self.compileItem()  # )
+        self.compileItem()  # {
         self.compileStatements()
-        self.compileItem() # }
-        if(self.tokenizer.keyWord == "ELSE"):
-            self.compileItem() # else
-            self.compileItem() # {
+        self.compileItem()  # }
+        if (self.tokenizer.keyWord == "ELSE"):
+            self.compileItem()  # else
+            self.compileItem()  # {
             self.compileStatements()
-            self.compileItem() # }
+            self.compileItem()  # }
         self.writeClose("ifStatement")
 
     def compileExpression(self):
         self.writeOpen("expression")
-        while(self.tokenizer.symbol != ")" and self.tokenizer.symbol != "]" and self.tokenizer.symbol != ";"):
-            isIdent = self.tokenizer.tokenType == "IDENTIFIER"
-            if(isIdent):
-                self.writeOpen("term")
-            self.compileItem() # todo real expressions
-            if(isIdent):
-                self.writeClose("term")
+        self.compileTerm()
+        while (self.tokenizer.symbol in OPS):
+            self.compileItem()  # & | + etc
+            self.compileTerm()
         self.writeClose("expression")
 
     def compileItem(self):
-        if(self.tokenizer.tokenType == "KEYWORD"):
+        if (self.tokenizer.tokenType == "KEYWORD"):
             self.writeTerminal("keyword", self.tokenizer.keyWord.lower())
-        elif(self.tokenizer.tokenType == "IDENTIFIER"):
+        elif (self.tokenizer.tokenType == "IDENTIFIER"):
             self.writeTerminal("identifier", self.tokenizer.identifier)
-        elif(self.tokenizer.tokenType == "SYMBOL"):
-            self.writeTerminal("symbol", self.tokenizer.symbol)
+        elif (self.tokenizer.tokenType == "SYMBOL"):
+            self.writeTerminal("symbol",
+                               self.tokenizer.symbol.replace("&", "&amp;")
+                               .replace("<", "&lt;").replace(">", "&gt;"))
+        elif (self.tokenizer.tokenType == "INT_CONST"):
+            self.writeTerminal("integerConstant", self.tokenizer.intVal)
+        elif (self.tokenizer.tokenType == "STRING_CONST"):
+            self.writeTerminal("stringConstant", self.tokenizer.stringVal)
         self.advance()
 
     def compileTerm(self):
-        pass
+        self.writeOpen("term")
+        if (self.tokenizer.symbol == "("):
+            self.compileItem()  # (
+            self.compileExpression()
+            self.compileItem()  # )
+        elif (self.tokenizer.symbol in UNARY_OPS):
+            self.compileItem()  # - ~
+            self.compileTerm()
+        else:
+            self.compileItem()  # any value
+            if (self.tokenizer.symbol == "."):
+                self.compileItem()  # .
+                self.compileItem()  # subroutineName
+                self.compileItem()  # (
+                self.compileExpressionList()
+                self.compileItem()  # )
+            elif (self.tokenizer.symbol == "["):
+                self.compileItem()  # [
+                self.compileExpression()
+                self.compileItem()  # ]
+            elif (self.tokenizer.symbol == "("):
+                self.compileItem()  # (
+                self.compileExpressionList()
+                self.compileItem()  # )
+
+        self.writeClose("term")
 
     def compileExpressionList(self):
         self.writeOpen("expressionList")
-        while(self.tokenizer.symbol != ")"):
+        while (self.tokenizer.symbol != ")"):
             self.compileExpression()
-            if(self.tokenizer.symbol == ","):
-                self.compileItem() # ,
+            if (self.tokenizer.symbol == ","):
+                self.compileItem()  # ,
         self.writeClose("expressionList")
 
 
@@ -302,7 +342,8 @@ if (__name__ == "__main__"):
     for p in files:
         print("Handling " + p.name)
         tokenizer = JackTokenizer(p)
-        compileEngine = CompileEngine(tokenizer, "{}/{}2.xml".format(dir, p.name.split(".")[0]))
-        #tokenizer.writeTokenXml()
+        compileEngine = CompileEngine(tokenizer, "{}/{}2.xml".format(
+            dir, p.name.split(".")[0]))
+        # tokenizer.writeTokenXml()
         compileEngine.compileClass()
         compileEngine.writeFile()
