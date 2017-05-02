@@ -1,0 +1,111 @@
+function Main.main 1
+push constant 8000
+push constant 1
+push constant 30000
+call Main.fillMemory 3
+pop temp 0
+push constant 8001
+push constant 16
+push constant 1
+neg
+call Main.fillMemory 3
+pop temp 0
+push constant 8000
+call Memory.peek 1
+pop local 0
+push local 0
+call Main.convert 1
+pop temp 0
+return
+function Main.convert 3
+push constant 1
+neg
+pop local 2
+label LOOPSTART1
+push local 2
+not
+if-goto LOOPEND2
+push local 1
+push constant 1
+add
+pop local 1
+push local 0
+call Main.nextMask 1
+pop local 0
+push local 1
+push constant 16
+gt
+not
+if-goto IFTRUE3
+goto IFFALSE4
+label IFTRUE3
+push argument 0
+push local 0
+and
+push constant 0
+eq
+not
+if-goto IFTRUE6
+goto IFFALSE7
+label IFTRUE6
+push constant 8000
+push local 1
+add
+push constant 1
+call Memory.poke 2
+pop temp 0
+goto IFEND8
+label IFFALSE7
+push constant 8000
+push local 1
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+label IFEND8
+goto IFEND5
+label IFFALSE4
+push constant 0
+pop local 2
+label IFEND5
+goto LOOPSTART1
+label LOOPEND2
+return
+function Main.nextMask 0
+push argument 0
+push constant 0
+eq
+if-goto IFTRUE9
+goto IFFALSE10
+label IFTRUE9
+push constant 1
+return
+goto IFEND11
+label IFFALSE10
+push argument 0
+push constant 2
+call Math.multiply 2
+return
+label IFEND11
+function Main.fillMemory 0
+label LOOPSTART12
+push argument 1
+push constant 0
+gt
+not
+if-goto LOOPEND13
+push argument 0
+push argument 2
+call Memory.poke 2
+pop temp 0
+push argument 1
+push constant 1
+sub
+pop argument 1
+push argument 0
+push constant 1
+add
+pop argument 0
+goto LOOPSTART12
+label LOOPEND13
+return
