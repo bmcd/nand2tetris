@@ -1,0 +1,446 @@
+function Ball.new 0
+push constant 15
+call Memory.alloc 1
+pop pointer 0
+push argument 0
+pop this 0
+push argument 1
+pop this 1
+push argument 2
+pop this 10
+push argument 3
+push constant 6
+sub
+pop this 11
+push argument 4
+pop this 12
+push argument 5
+push constant 6
+sub
+pop this 13
+push constant 0
+pop this 14
+push pointer 0
+call Ball.show 1
+pop temp 0
+push pointer 0
+return
+function Ball.dispose 0
+push argument 0
+pop pointer 0
+push pointer 0
+call Memory.deAlloc 1
+pop temp 0
+return
+function Ball.show 0
+push argument 0
+pop pointer 0
+push constant 1
+neg
+call Screen.setColor 1
+pop temp 0
+push pointer 0
+call Ball.draw 1
+pop temp 0
+return
+function Ball.hide 0
+push argument 0
+pop pointer 0
+push constant 0
+call Screen.setColor 1
+pop temp 0
+push pointer 0
+call Ball.draw 1
+pop temp 0
+return
+function Ball.draw 0
+push argument 0
+pop pointer 0
+push this 0
+push this 1
+push this 0
+push constant 5
+add
+push this 1
+push constant 5
+add
+call Screen.drawRectangle 4
+pop temp 0
+return
+function Ball.getLeft 0
+push argument 0
+pop pointer 0
+push this 0
+return
+function Ball.getRight 0
+push argument 0
+pop pointer 0
+push this 0
+push constant 5
+add
+return
+function Ball.setDestination 3
+push argument 0
+pop pointer 0
+push argument 0
+push this 0
+sub
+pop this 2
+push argument 1
+push this 1
+sub
+pop this 3
+push this 2
+call Math.abs 1
+pop local 0
+push this 3
+call Math.abs 1
+pop local 1
+push local 0
+push local 1
+lt
+pop this 7
+push this 7
+if-goto IFTRUE1
+goto IFFALSE2
+label IFTRUE1
+push local 0
+pop local 2
+push local 1
+pop local 0
+push local 2
+pop local 1
+push this 1
+push argument 1
+lt
+pop this 8
+push this 0
+push argument 0
+lt
+pop this 9
+goto IFEND3
+label IFFALSE2
+push this 0
+push argument 0
+lt
+pop this 8
+push this 1
+push argument 1
+lt
+pop this 9
+label IFEND3
+push constant 2
+push local 1
+call Math.multiply 2
+push local 0
+sub
+pop this 4
+push constant 2
+push local 1
+call Math.multiply 2
+pop this 5
+push constant 2
+push local 1
+push local 0
+sub
+call Math.multiply 2
+pop this 6
+return
+function Ball.move 0
+push argument 0
+pop pointer 0
+push pointer 0
+call Ball.hide 1
+pop temp 0
+push this 4
+push constant 0
+lt
+if-goto IFTRUE4
+goto IFFALSE5
+label IFTRUE4
+push this 4
+push this 5
+add
+pop this 4
+goto IFEND6
+label IFFALSE5
+push this 4
+push this 6
+add
+pop this 4
+push this 9
+if-goto IFTRUE7
+goto IFFALSE8
+label IFTRUE7
+push this 7
+if-goto IFTRUE10
+goto IFFALSE11
+label IFTRUE10
+push this 0
+push constant 4
+add
+pop this 0
+goto IFEND12
+label IFFALSE11
+push this 1
+push constant 4
+add
+pop this 1
+label IFEND12
+goto IFEND9
+label IFFALSE8
+push this 7
+if-goto IFTRUE13
+goto IFFALSE14
+label IFTRUE13
+push this 0
+push constant 4
+sub
+pop this 0
+goto IFEND15
+label IFFALSE14
+push this 1
+push constant 4
+sub
+pop this 1
+label IFEND15
+label IFEND9
+label IFEND6
+push this 8
+if-goto IFTRUE16
+goto IFFALSE17
+label IFTRUE16
+push this 7
+if-goto IFTRUE19
+goto IFFALSE20
+label IFTRUE19
+push this 1
+push constant 4
+add
+pop this 1
+goto IFEND21
+label IFFALSE20
+push this 0
+push constant 4
+add
+pop this 0
+label IFEND21
+goto IFEND18
+label IFFALSE17
+push this 7
+if-goto IFTRUE22
+goto IFFALSE23
+label IFTRUE22
+push this 1
+push constant 4
+sub
+pop this 1
+goto IFEND24
+label IFFALSE23
+push this 0
+push constant 4
+sub
+pop this 0
+label IFEND24
+label IFEND18
+push this 0
+push this 10
+gt
+not
+if-goto IFTRUE25
+goto IFFALSE26
+label IFTRUE25
+push constant 1
+pop this 14
+push this 10
+pop this 0
+goto IFEND27
+label IFFALSE26
+label IFEND27
+push this 0
+push this 11
+lt
+not
+if-goto IFTRUE28
+goto IFFALSE29
+label IFTRUE28
+push constant 2
+pop this 14
+push this 11
+pop this 0
+goto IFEND30
+label IFFALSE29
+label IFEND30
+push this 1
+push this 12
+gt
+not
+if-goto IFTRUE31
+goto IFFALSE32
+label IFTRUE31
+push constant 3
+pop this 14
+push this 12
+pop this 1
+goto IFEND33
+label IFFALSE32
+label IFEND33
+push this 1
+push this 13
+lt
+not
+if-goto IFTRUE34
+goto IFFALSE35
+label IFTRUE34
+push constant 4
+pop this 14
+push this 13
+pop this 1
+goto IFEND36
+label IFFALSE35
+label IFEND36
+push pointer 0
+call Ball.show 1
+pop temp 0
+push this 14
+return
+function Ball.bounce 5
+push argument 0
+pop pointer 0
+push this 2
+push constant 10
+call Math.divide 2
+pop local 2
+push this 3
+push constant 10
+call Math.divide 2
+pop local 3
+push argument 0
+push constant 0
+eq
+if-goto IFTRUE37
+goto IFFALSE38
+label IFTRUE37
+push constant 10
+pop local 4
+goto IFEND39
+label IFFALSE38
+push this 2
+push constant 0
+lt
+not
+push argument 0
+push constant 1
+eq
+and
+push this 2
+push constant 0
+lt
+push argument 0
+push constant 1
+neg
+eq
+and
+or
+if-goto IFTRUE40
+goto IFFALSE41
+label IFTRUE40
+push constant 20
+pop local 4
+goto IFEND42
+label IFFALSE41
+push constant 5
+pop local 4
+label IFEND42
+label IFEND39
+push this 14
+push constant 1
+eq
+if-goto IFTRUE43
+goto IFFALSE44
+label IFTRUE43
+push constant 506
+pop local 0
+push local 3
+push constant 50
+neg
+call Math.multiply 2
+push local 2
+call Math.divide 2
+pop local 1
+push this 1
+push local 1
+push local 4
+call Math.multiply 2
+add
+pop local 1
+goto IFEND45
+label IFFALSE44
+push this 14
+push constant 2
+eq
+if-goto IFTRUE46
+goto IFFALSE47
+label IFTRUE46
+push constant 0
+pop local 0
+push local 3
+push constant 50
+call Math.multiply 2
+push local 2
+call Math.divide 2
+pop local 1
+push this 1
+push local 1
+push local 4
+call Math.multiply 2
+add
+pop local 1
+goto IFEND48
+label IFFALSE47
+push this 14
+push constant 3
+eq
+if-goto IFTRUE49
+goto IFFALSE50
+label IFTRUE49
+push constant 250
+pop local 1
+push local 2
+push constant 25
+neg
+call Math.multiply 2
+push local 3
+call Math.divide 2
+pop local 0
+push this 0
+push local 0
+push local 4
+call Math.multiply 2
+add
+pop local 0
+goto IFEND51
+label IFFALSE50
+push constant 0
+pop local 1
+push local 2
+push constant 25
+call Math.multiply 2
+push local 3
+call Math.divide 2
+pop local 0
+push this 0
+push local 0
+push local 4
+call Math.multiply 2
+add
+pop local 0
+label IFEND51
+label IFEND48
+label IFEND45
+push pointer 0
+push local 0
+push local 1
+call Ball.setDestination 3
+pop temp 0
+return

@@ -13,7 +13,18 @@ KEYWORDS = [
     'int', 'char', 'boolean', 'void', 'true', 'false', 'null', 'this', 'let',
     'do', 'if', 'else', 'while', 'return'
 ]
-OPS = {'+': "ADD", '-': "SUB", '*': "Math.multiply", '/': "Math.divide", '|': "OR", '&': "AND", '~': "DUNNO", '<': "LT", '>': "GT", '=': "EQ"}
+OPS = {
+    '+': "ADD",
+    '-': "SUB",
+    '*': "Math.multiply",
+    '/': "Math.divide",
+    '|': "OR",
+    '&': "AND",
+    '~': "DUNNO",
+    '<': "LT",
+    '>': "GT",
+    '=': "EQ"
+}
 UNARY_OPS = {'-': "NEG", '~': "NOT"}
 
 
@@ -169,23 +180,31 @@ class CompileEngine:
     def compileSubroutine(self):
         self.symbolTable.startSubroutine()
         self.writeOpen("subroutineDec")
+        funtype = self.tokenizer.keyWord
         self.compileItem()  # constructor/function/method
         self.compileItem()  # return type
         label = "{}.{}".format(self.classname, self.tokenizer.identifier)
         self.compileItem()  # name
         self.compileItem()  # (
-        nArgs = 0
         self.compileParameterList()
+        nArgs = self.symbolTable.varCount("ARG")
         self.compileItem()  # )
         self.writeOpen("subroutineBody")
         self.compileItem()  # {
-        nLocals = 0
         while (self.tokenizer.keyWord == "VAR"):
-            nLocals += self.compileVarDec()
+            self.compileVarDec()
 
+        nLocals = self.symbolTable.varCount("VAR")
         self.writer.writeFunction(label, nLocals)
+        if (funtype == "METHOD"):
+            nArgs += 1
+            self.writer.writePush("ARG", 0)
+            self.writer.writePop("POINTER", 0)
+        elif (funtype == "CONSTRUCTOR"):
+            self.writer.writePush("CONST", self.symbolTable.varCount("FIELD"))
+            self.writer.writeCall("Memory.alloc", 1)
+            self.writer.writePop("POINTER", 0)
         self.compileStatements()
-
         self.compileItem()  # }
         self.writeClose("subroutineBody")
         self.writeClose("subroutineDec")
@@ -229,10 +248,23 @@ class CompileEngine:
         self.writeOpen("doStatement")
         self.compileItem()  # do
         label = ""
+        argCount = 0
         while (self.tokenizer.symbol != "("):
             label += self.compileItem()[0]  # Main . method
+        parts = label.split(".")
+        objsym = self.symbolTable.getSymbol(parts[0])
+        if (objsym is not None):
+            # is a method, push obj as first param
+            self.writer.writePush(objsym.kind, objsym.index)
+            label = label.replace(objsym.name, objsym.thetype)
+            argCount += 1
+        elif (len(parts) == 1):
+            label = self.classname + "." + label
+            self.writer.writePush("POINTER", 0)
+            argCount += 1
+
         self.compileItem()  # (
-        argCount = self.compileExpressionList()
+        argCount += self.compileExpressionList()
         self.compileItem()  # )
         self.compileItem()  # ;
         self.writer.writeCall(label, argCount)
@@ -242,16 +274,24 @@ class CompileEngine:
     def compileLet(self):
         self.writeOpen("letStatement")
         self.compileItem()  # let
-        while (self.tokenizer.symbol != "="):
+        is_array = False
+        if (self.tokenizer.symbol != "="):
             value, sym = self.compileItem()  # a
             if (self.tokenizer.symbol == "["):
+                is_array = True
+                self.writer.writePush(sym.kind, sym.index)
                 self.compileItem()  # [
                 self.compileExpression()  # 0
+                self.writer.writeArithmetic("ADD")
+                self.writer.writePop("POINTER", 1)
                 self.compileItem()  # ]
         self.compileItem()  # =
         self.compileExpression()
         self.compileItem()  # ;
-        self.writer.writePop(sym.kind, sym.index)
+        if (is_array):
+            self.writer.writePop("THAT", 0)
+        else:
+            self.writer.writePop(sym.kind, sym.index)
         self.writeClose("letStatement")
 
     def compileWhile(self):
@@ -312,7 +352,7 @@ class CompileEngine:
         while (self.tokenizer.symbol in OPS.keys()):
             op, _ = self.compileItem()  # & | + etc
             self.compileTerm()
-            if(op in ["*", "/"]):
+            if (op in ["*", "/"]):
                 self.writer.writeCall(OPS[op], 2)
             else:
                 self.writer.writeArithmetic(OPS[op])
@@ -320,7 +360,8 @@ class CompileEngine:
 
     def compileNewIdentifier(self, thetype, kind):
         sym = self.symbolTable.define(self.tokenizer.identifier, thetype, kind)
-        self.writeTerminal("identifier", "{} DEFINE {} {} {}".format(sym.kind, sym.thetype, sym.name, sym.index))
+        self.writeTerminal("identifier", "{} DEFINE {} {} {}".format(
+            sym.kind, sym.thetype, sym.name, sym.index))
         self.advance()
 
     def compileItem(self):
@@ -332,9 +373,10 @@ class CompileEngine:
         elif (self.tokenizer.tokenType == "IDENTIFIER"):
             name = self.tokenizer.identifier
             sym = self.symbolTable.getSymbol(name)
-            if(sym):
+            if (sym):
                 ret = name
-                self.writeTerminal("identifier", "{} EXISTING {} {} {}".format(sym.kind, sym.thetype, sym.name, sym.index))
+                self.writeTerminal("identifier", "{} EXISTING {} {} {}".format(
+                    sym.kind, sym.thetype, sym.name, sym.index))
             else:
                 ret = name
                 # class or subroutine
@@ -370,26 +412,56 @@ class CompileEngine:
                 value += self.compileItem()[0]  # .
                 value += self.compileItem()[0]  # subroutineName
             if (self.tokenizer.symbol == "["):
+                self.writer.writePush(sym.kind, sym.index)
                 self.compileItem()  # [
                 self.compileExpression()
+                self.writer.writeArithmetic("ADD")
+                self.writer.writePop("POINTER", 1)
+                self.writer.writePush("THAT", 0)
                 self.compileItem()  # ]
             elif (self.tokenizer.symbol == "("):
+                parts = value.split(".")
+                sym = self.symbolTable.getSymbol(parts[0])
+                nArgs = 0
+                if (sym is not None):
+                    # is a method, push obj as first param
+                    self.writer.writePush(sym.kind, sym.index)
+                    value = value.replace(sym.name, sym.thetype)
+                    nArgs += 1
+                elif (len(parts) == 1):
+                    value = self.classname + "." + value
+                    self.writer.writePush("POINTER", 0)
+                    nArgs += 1
+
                 self.compileItem()  # (
-                nArgs = self.compileExpressionList()
+                nArgs += self.compileExpressionList()
                 self.writer.writeCall(value, nArgs)
                 self.compileItem()  # )
             elif (tokenType == "INT_CONST"):
                 self.writer.writePush("CONST", value)
             elif (tokenType == "STRING_CONST"):
-                self.writer.writePush("CONST", value)
+                self.writer.writePush("CONST", len(value))
+                self.writer.writeCall("String.new", 1)
+                self.writer.writePop("TEMP", 1)
+                for i in range(len(value)):
+                    self.writer.writePush("TEMP", 1)
+                    self.writer.writePush("CONST", ord(value[i]))
+                    self.writer.writeCall("String.appendChar", 2)
+                    self.writer.writePop("TEMP", 0)
+                self.writer.writePush("TEMP", 1)
+
             elif (tokenType == "KEYWORD"):
                 if (value == "TRUE"):
                     self.writer.writePush("CONST", 1)
                     self.writer.writeArithmetic("NEG")
-                else:
+                elif (value == "THIS"):
+                    self.writer.writePush("POINTER", 0)
+                elif (value in ["FALSE", "NULL"]):
                     self.writer.writePush("CONST", 0)
+                else:
+                    print(value)
+                    raise Exception()
             else:
-                print(value)
                 self.writer.writePush(sym.kind, sym.index)
 
         self.writeClose("term")
@@ -423,8 +495,9 @@ if (__name__ == "__main__"):
         print("Handling " + p.name)
         tokenizer = JackTokenizer(p)
         symbolTable = SymbolTable()
-        compileEngine = CompileEngine(symbolTable, tokenizer, "{}/{}.vm".format(
-            dir, p.name.split(".")[0]))
+        compileEngine = CompileEngine(symbolTable, tokenizer,
+                                      "{}/{}.vm".format(dir,
+                                                        p.name.split(".")[0]))
         # tokenizer.writeTokenXml()
         compileEngine.compileClass()
         compileEngine.writeFile()

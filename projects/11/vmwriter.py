@@ -1,25 +1,27 @@
 SEGMENTS = {
-        "CONST": "constant",
-        "ARG": "argument",
-        "LOCAL": "local",
-        "VAR": "local",
-        "STATIC": "static",
-        "THIS": "this",
-        "THAT": "that",
-        "POINTER": "pointer",
-        "TEMP": "temp",
-        }
+    "CONST": "constant",
+    "ARG": "argument",
+    "LOCAL": "local",
+    "VAR": "local",
+    "STATIC": "static",
+    "THIS": "this",
+    "FIELD": "this",
+    "THAT": "that",
+    "POINTER": "pointer",
+    "TEMP": "temp",
+}
 ARITHMETIC = {
-        "ADD": "add",
-        "SUB": "sub",
-        "NEG": "neg",
-        "EQ": "eq",
-        "GT": "gt",
-        "LT": "lt",
-        "AND": "and",
-        "OR": "or",
-        "NOT": "not",
-        }
+    "ADD": "add",
+    "SUB": "sub",
+    "NEG": "neg",
+    "EQ": "eq",
+    "GT": "gt",
+    "LT": "lt",
+    "AND": "and",
+    "OR": "or",
+    "NOT": "not",
+}
+
 
 class VMWriter:
     def __init__(self, filename):
@@ -59,4 +61,3 @@ class VMWriter:
     def close(self):
         self.writeFile()
         self.output.close()
-
