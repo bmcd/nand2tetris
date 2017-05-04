@@ -178,9 +178,9 @@ class CompileEngine:
         return count
 
     def compileSubroutine(self):
-        self.symbolTable.startSubroutine()
         self.writeOpen("subroutineDec")
         funtype = self.tokenizer.keyWord
+        self.symbolTable.startSubroutine(funtype == "METHOD")
         self.compileItem()  # constructor/function/method
         self.compileItem()  # return type
         label = "{}.{}".format(self.classname, self.tokenizer.identifier)
@@ -279,16 +279,18 @@ class CompileEngine:
             value, sym = self.compileItem()  # a
             if (self.tokenizer.symbol == "["):
                 is_array = True
-                self.writer.writePush(sym.kind, sym.index)
                 self.compileItem()  # [
                 self.compileExpression()  # 0
+                self.writer.writePush(sym.kind, sym.index)
                 self.writer.writeArithmetic("ADD")
-                self.writer.writePop("POINTER", 1)
                 self.compileItem()  # ]
         self.compileItem()  # =
         self.compileExpression()
         self.compileItem()  # ;
         if (is_array):
+            self.writer.writePop("TEMP", 0)
+            self.writer.writePop("POINTER", 1)
+            self.writer.writePush("TEMP", 0)
             self.writer.writePop("THAT", 0)
         else:
             self.writer.writePop(sym.kind, sym.index)
@@ -442,13 +444,13 @@ class CompileEngine:
             elif (tokenType == "STRING_CONST"):
                 self.writer.writePush("CONST", len(value))
                 self.writer.writeCall("String.new", 1)
-                self.writer.writePop("TEMP", 1)
                 for i in range(len(value)):
+                    self.writer.writePop("TEMP", 1)
+                    self.writer.writePush("TEMP", 1)
                     self.writer.writePush("TEMP", 1)
                     self.writer.writePush("CONST", ord(value[i]))
                     self.writer.writeCall("String.appendChar", 2)
                     self.writer.writePop("TEMP", 0)
-                self.writer.writePush("TEMP", 1)
 
             elif (tokenType == "KEYWORD"):
                 if (value == "TRUE"):

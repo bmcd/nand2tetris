@@ -5,9 +5,9 @@ class SymbolTable:
         self.classscope['FIELD'] = 0
         self.startSubroutine()
 
-    def startSubroutine(self):
+    def startSubroutine(self, isMethod=False):
         self.subscope = dict()
-        self.subscope['ARG'] = 0
+        self.subscope['ARG'] = 1 if isMethod else 0
         self.subscope['VAR'] = 0
 
     def define(self, name, thetype, kind):
@@ -17,7 +17,7 @@ class SymbolTable:
         return table[name]
 
     def getTableAndIndex(self, kind):
-        if(kind in ['STATIC', 'FIELD']):
+        if (kind in ['STATIC', 'FIELD']):
             table = self.classscope
         else:
             table = self.subscope
@@ -36,7 +36,7 @@ class SymbolTable:
 
     def kindOf(self, name):
         symbol = self.getSymbol(name)
-        if(symbol is not None):
+        if (symbol is not None):
             return symbol.kind
         return None
 
@@ -46,10 +46,10 @@ class SymbolTable:
     def indexOf(self, name):
         return self.getSymbol(name).index
 
+
 class Symbol:
     def __init__(self, name, thetype, kind, index):
         self.name = name
         self.thetype = thetype
         self.kind = kind
         self.index = index
-
